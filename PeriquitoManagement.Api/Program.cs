@@ -3,17 +3,13 @@ using PeriquitoManagement.Api.Configuration;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-builder.Services.AddOpenApi();
 builder.Services.AddDatabase(builder.Configuration);
 builder.Services.AddProjectDependencies();
+builder.Services.AddSwaggerConfiguration();
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
-
+app.UseSwaggerConfiguration();
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();

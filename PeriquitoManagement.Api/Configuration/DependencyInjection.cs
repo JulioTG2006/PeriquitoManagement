@@ -1,3 +1,4 @@
+using PeriquitoManagement.Application.Configuration;
 using PeriquitoManagement.Application.Interfaces;
 using PeriquitoManagement.Domain.Interfaces;
 using PeriquitoManagement.Infrastructure.Persistence;
@@ -11,10 +12,10 @@ public static class DependencyInjection
     public static IServiceCollection AddProjectDependencies(
         this IServiceCollection services)
     {
+        services.AddApplication();
         services.AddScoped(
             typeof(IRepository<>),
             typeof(Repository<>));
-
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IDatabaseHealthService, DatabaseHealthService>();
 
