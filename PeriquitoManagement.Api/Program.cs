@@ -9,6 +9,7 @@ builder.Services.AddSwaggerConfiguration();
 
 var app = builder.Build();
 
+app.UseMiddlewareConfiguration();
 app.UseSwaggerConfiguration();
 app.UseHttpsRedirection();
 app.UseAuthorization();
