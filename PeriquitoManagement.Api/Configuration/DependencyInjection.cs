@@ -1,5 +1,6 @@
 using PeriquitoManagement.Application.Configuration;
 using PeriquitoManagement.Application.Interfaces;
+using PeriquitoManagement.Domain.Entities;
 using PeriquitoManagement.Domain.Interfaces;
 using PeriquitoManagement.Infrastructure.Persistence;
 using PeriquitoManagement.Infrastructure.Repositories;
@@ -16,6 +17,9 @@ public static class DependencyInjection
         services.AddScoped(
             typeof(IRepository<>),
             typeof(Repository<>));
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
+        services.AddScoped<IRepository<Category>>(
+            provider => provider.GetRequiredService<ICategoryRepository>());
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IDatabaseHealthService, DatabaseHealthService>();
 

@@ -4,3 +4,35 @@ GET {{PeriquitoManagement.Api_HostAddress}}/api/health
 Accept: application/json
 
 ###
+
+GET {{PeriquitoManagement.Api_HostAddress}}/api/categories
+Accept: application/json
+
+###
+
+GET {{PeriquitoManagement.Api_HostAddress}}/api/categories/1
+Accept: application/json
+
+###
+
+POST {{PeriquitoManagement.Api_HostAddress}}/api/categories
+Content-Type: application/json
+
+{
+  "name": "Bebidas",
+  "isActive": true
+}
+
+###
+
+PUT {{PeriquitoManagement.Api_HostAddress}}/api/categories/1
+Content-Type: application/json
+
+{
+  "name": "Bebidas frías",
+  "isActive": true
+}
+
+###
+
+DELETE {{PeriquitoManagement.Api_HostAddress}}/api/categories/1
