@@ -1,10 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using PeriquitoManagement.Application.Interfaces;
 
 namespace PeriquitoManagement.Api.Controllers;
 
 [ApiController]
 [Route("api/health")]
+[AllowAnonymous]
 public class HealthController(IDatabaseHealthService databaseHealthService)
     : ControllerBase
 {

@@ -31,6 +31,8 @@ public sealed class ExceptionMiddleware(
             {
                 ValidationException => (StatusCodes.Status400BadRequest,
                     "Validation failed", exception.Message),
+                UnauthorizedException => (StatusCodes.Status401Unauthorized,
+                    "Unauthorized", "Authentication failed."),
                 BadHttpRequestException => (StatusCodes.Status400BadRequest,
                     "Bad request", "The request could not be processed."),
                 NotFoundException => (StatusCodes.Status404NotFound,

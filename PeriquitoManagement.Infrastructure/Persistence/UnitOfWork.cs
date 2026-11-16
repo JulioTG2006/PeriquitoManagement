@@ -1,3 +1,5 @@
+using System.Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using PeriquitoManagement.Domain.Interfaces;
 
@@ -15,14 +17,15 @@ public class UnitOfWork(PeriquitoDbContext context)
     }
 
     public async Task BeginTransactionAsync(
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        IsolationLevel isolationLevel = IsolationLevel.ReadCommitted)
     {
         if (_transaction is not null)
             throw new InvalidOperationException(
                 "A transaction is already active.");
 
         _transaction = await context.Database
-            .BeginTransactionAsync(cancellationToken);
+            .BeginTransactionAsync(isolationLevel, cancellationToken);
     }
 
     public async Task CommitTransactionAsync(

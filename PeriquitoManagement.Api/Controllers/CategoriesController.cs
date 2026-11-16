@@ -1,12 +1,15 @@
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PeriquitoManagement.Application.DTOs;
 using PeriquitoManagement.Application.UseCases.Categories;
+using PeriquitoManagement.Domain.Constants;
 
 namespace PeriquitoManagement.Api.Controllers;
 
 [ApiController]
 [Route("api/categories")]
+[Authorize(Roles = RoleNames.Administrator + "," + RoleNames.Waiter)]
 public sealed class CategoriesController(ISender sender) : ControllerBase
 {
     [HttpGet]
@@ -28,6 +31,7 @@ public sealed class CategoriesController(ISender sender) : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = RoleNames.Administrator)]
     [ProducesResponseType<CategoryDto>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
@@ -43,6 +47,7 @@ public sealed class CategoriesController(ISender sender) : ControllerBase
     }
 
     [HttpPut("{id:long}")]
+    [Authorize(Roles = RoleNames.Administrator)]
     [ProducesResponseType<CategoryDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
@@ -60,6 +65,7 @@ public sealed class CategoriesController(ISender sender) : ControllerBase
     }
 
     [HttpDelete("{id:long}")]
+    [Authorize(Roles = RoleNames.Administrator)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]

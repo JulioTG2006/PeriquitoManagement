@@ -1,5 +1,6 @@
 using PeriquitoManagement.Application.Configuration;
 using PeriquitoManagement.Application.Interfaces;
+using Microsoft.AspNetCore.Identity;
 using PeriquitoManagement.Domain.Entities;
 using PeriquitoManagement.Domain.Interfaces;
 using PeriquitoManagement.Infrastructure.Persistence;
@@ -20,8 +21,21 @@ public static class DependencyInjection
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IRepository<Category>>(
             provider => provider.GetRequiredService<ICategoryRepository>());
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IRepository<User>>(
+            provider => provider.GetRequiredService<IUserRepository>());
+        services.AddScoped<IDishRepository, DishRepository>();
+        services.AddScoped<IRepository<Dish>>(
+            provider => provider.GetRequiredService<IDishRepository>());
+        services.AddScoped<ITableRepository, TableRepository>();
+        services.AddScoped<IRepository<Table>>(
+            provider => provider.GetRequiredService<ITableRepository>());
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IDatabaseHealthService, DatabaseHealthService>();
+        services.AddScoped<IPasswordService, PasswordService>();
+        services.AddScoped<ITokenService, TokenService>();
+        services.AddScoped<IUserBootstrapper, UserBootstrapper>();
+        services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 
         return services;
     }

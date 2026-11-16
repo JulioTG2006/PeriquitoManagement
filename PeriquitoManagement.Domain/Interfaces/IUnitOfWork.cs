@@ -6,7 +6,8 @@ public interface IUnitOfWork
         CancellationToken cancellationToken = default);
 
     Task BeginTransactionAsync(
-        CancellationToken cancellationToken = default);
+        CancellationToken cancellationToken = default,
+        System.Data.IsolationLevel isolationLevel = System.Data.IsolationLevel.ReadCommitted);
 
     Task CommitTransactionAsync(
         CancellationToken cancellationToken = default);

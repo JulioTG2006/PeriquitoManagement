@@ -6,16 +6,19 @@ Accept: application/json
 ###
 
 GET {{PeriquitoManagement.Api_HostAddress}}/api/categories
+Authorization: Bearer {{AccessToken}}
 Accept: application/json
 
 ###
 
 GET {{PeriquitoManagement.Api_HostAddress}}/api/categories/1
+Authorization: Bearer {{AccessToken}}
 Accept: application/json
 
 ###
 
 POST {{PeriquitoManagement.Api_HostAddress}}/api/categories
+Authorization: Bearer {{AccessToken}}
 Content-Type: application/json
 
 {
@@ -26,6 +29,7 @@ Content-Type: application/json
 ###
 
 PUT {{PeriquitoManagement.Api_HostAddress}}/api/categories/1
+Authorization: Bearer {{AccessToken}}
 Content-Type: application/json
 
 {
@@ -36,3 +40,169 @@ Content-Type: application/json
 ###
 
 DELETE {{PeriquitoManagement.Api_HostAddress}}/api/categories/1
+Authorization: Bearer {{AccessToken}}
+
+###
+
+POST {{PeriquitoManagement.Api_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "username": "{{AdminUsername}}",
+  "password": "{{AdminPassword}}"
+}
+
+###
+
+GET {{PeriquitoManagement.Api_HostAddress}}/api/auth/me
+Authorization: Bearer {{AccessToken}}
+Accept: application/json
+
+###
+
+GET {{PeriquitoManagement.Api_HostAddress}}/api/users
+Authorization: Bearer {{AccessToken}}
+Accept: application/json
+
+###
+
+POST {{PeriquitoManagement.Api_HostAddress}}/api/users
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "username": "{{NewUsername}}",
+  "fullName": "Usuario de prueba",
+  "password": "{{NewUserPassword}}",
+  "role": "Mesero"
+}
+
+###
+
+PUT {{PeriquitoManagement.Api_HostAddress}}/api/users/{{UserId}}
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "fullName": "Usuario actualizado",
+  "role": "Mesero",
+  "isActive": true,
+  "password": null
+}
+
+###
+
+DELETE {{PeriquitoManagement.Api_HostAddress}}/api/users/{{UserId}}
+Authorization: Bearer {{AccessToken}}
+
+###
+
+GET {{PeriquitoManagement.Api_HostAddress}}/api/dishes
+Authorization: Bearer {{AccessToken}}
+Accept: application/json
+
+###
+
+GET {{PeriquitoManagement.Api_HostAddress}}/api/dishes?categoryId=1&isAvailable=true
+Authorization: Bearer {{AccessToken}}
+Accept: application/json
+
+###
+
+GET {{PeriquitoManagement.Api_HostAddress}}/api/dishes/{{DishId}}
+Authorization: Bearer {{AccessToken}}
+Accept: application/json
+
+###
+
+GET {{PeriquitoManagement.Api_HostAddress}}/api/tables
+Authorization: Bearer {{AccessToken}}
+Accept: application/json
+
+###
+
+GET {{PeriquitoManagement.Api_HostAddress}}/api/tables/available
+Authorization: Bearer {{AccessToken}}
+Accept: application/json
+
+###
+
+GET {{PeriquitoManagement.Api_HostAddress}}/api/tables/occupied
+Authorization: Bearer {{AccessToken}}
+Accept: application/json
+
+###
+
+GET {{PeriquitoManagement.Api_HostAddress}}/api/tables/{{TableId}}
+Authorization: Bearer {{AccessToken}}
+Accept: application/json
+
+###
+
+POST {{PeriquitoManagement.Api_HostAddress}}/api/dishes
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "categoryId": 1,
+  "name": "Plato de prueba",
+  "description": null,
+  "price": 10.00,
+  "cost": 4.00,
+  "isAvailable": true
+}
+
+###
+
+POST {{PeriquitoManagement.Api_HostAddress}}/api/tables
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "tableNumber": 99,
+  "capacity": 4
+}
+
+###
+
+PUT {{PeriquitoManagement.Api_HostAddress}}/api/dishes/{{DishId}}
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "categoryId": 1,
+  "name": "Plato actualizado",
+  "description": null,
+  "price": 12.00,
+  "cost": 5.00,
+  "isAvailable": true
+}
+
+###
+
+PATCH {{PeriquitoManagement.Api_HostAddress}}/api/dishes/{{DishId}}/availability
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+false
+
+###
+
+DELETE {{PeriquitoManagement.Api_HostAddress}}/api/dishes/{{DishId}}
+Authorization: Bearer {{AccessToken}}
+
+###
+
+PUT {{PeriquitoManagement.Api_HostAddress}}/api/tables/{{TableId}}
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "tableNumber": 99,
+  "capacity": 4
+}
+
+###
+
+DELETE {{PeriquitoManagement.Api_HostAddress}}/api/tables/{{TableId}}
+Authorization: Bearer {{AccessToken}}
