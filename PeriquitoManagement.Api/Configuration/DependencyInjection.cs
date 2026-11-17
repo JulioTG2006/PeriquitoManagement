@@ -30,6 +30,12 @@ public static class DependencyInjection
         services.AddScoped<ITableRepository, TableRepository>();
         services.AddScoped<IRepository<Table>>(
             provider => provider.GetRequiredService<ITableRepository>());
+        services.AddScoped<IOrderRepository, OrderRepository>();
+        services.AddScoped<IRepository<Order>>(
+            provider => provider.GetRequiredService<IOrderRepository>());
+        services.AddScoped<ISaleRepository, SaleRepository>();
+        services.AddScoped<IRepository<Sale>>(
+            provider => provider.GetRequiredService<ISaleRepository>());
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IDatabaseHealthService, DatabaseHealthService>();
         services.AddScoped<IPasswordService, PasswordService>();

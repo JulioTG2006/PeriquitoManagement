@@ -38,6 +38,13 @@ public sealed class TableRepository(PeriquitoDbContext context)
     public Task<bool> HasActiveOrderAsync(long tableId, CancellationToken cancellationToken = default)
     {
         return Context.Orders.AnyAsync(order => order.TableId == tableId
-            && order.Status != "Cerrado" && order.Status != "Cancelado", cancellationToken);
+            && OrderStatuses.Active.Contains(order.Status), cancellationToken);
+    }
+
+    public Task<Table?> GetByIdForUpdateAsync(long id, CancellationToken cancellationToken = default)
+    {
+        return Context.Tables.FromSqlInterpolated(
+                $"SELECT * FROM \"tables\" WHERE id = {id} FOR UPDATE")
+            .FirstOrDefaultAsync(cancellationToken);
     }
 }

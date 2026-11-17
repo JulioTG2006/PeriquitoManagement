@@ -11,4 +11,6 @@ public interface ITableRepository : IRepository<Table>
     Task<bool> HasOrderHistoryAsync(long tableId, CancellationToken cancellationToken = default);
 
     Task<bool> HasActiveOrderAsync(long tableId, CancellationToken cancellationToken = default);
+
+    Task<Table?> GetByIdForUpdateAsync(long id, CancellationToken cancellationToken = default);
 }

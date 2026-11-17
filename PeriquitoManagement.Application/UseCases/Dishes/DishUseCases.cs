@@ -97,15 +97,15 @@ public sealed class UpdateDishHandler(IDishRepository dishes, IUnitOfWork unitOf
         var category = await dishes.GetCategoryByIdAsync(request.CategoryId, cancellationToken)
             ?? throw new NotFoundException($"Category {request.CategoryId} was not found.");
         dish.CategoryId = request.CategoryId;
-        dish.Category = category;
         dish.Name = values.Name;
         dish.Description = values.Description;
         dish.Price = request.Price;
         dish.Cost = request.Cost;
         dish.IsAvailable = request.IsAvailable;
-        dishes.Update(dish);
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        return DishMapping.ToAdminDto(dish);
+        return new AdminDishDto(
+            dish.Id, dish.CategoryId, category.Name, dish.Name, dish.Description,
+            dish.Price, dish.Cost, dish.IsAvailable);
     }
 }
 

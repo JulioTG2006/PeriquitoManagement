@@ -206,3 +206,85 @@ Content-Type: application/json
 
 DELETE {{PeriquitoManagement.Api_HostAddress}}/api/tables/{{TableId}}
 Authorization: Bearer {{AccessToken}}
+
+###
+
+GET {{PeriquitoManagement.Api_HostAddress}}/api/tables/available
+Authorization: Bearer {{MeseroToken}}
+Accept: application/json
+
+###
+
+POST {{PeriquitoManagement.Api_HostAddress}}/api/orders
+Authorization: Bearer {{MeseroToken}}
+Content-Type: application/json
+
+{
+  "tableId": {{AvailableTableId}}
+}
+
+###
+
+GET {{PeriquitoManagement.Api_HostAddress}}/api/orders/active
+Authorization: Bearer {{MeseroToken}}
+Accept: application/json
+
+###
+
+GET {{PeriquitoManagement.Api_HostAddress}}/api/orders/{{OrderId}}
+Authorization: Bearer {{MeseroToken}}
+Accept: application/json
+
+###
+
+GET {{PeriquitoManagement.Api_HostAddress}}/api/orders/tables/{{AvailableTableId}}/active
+Authorization: Bearer {{MeseroToken}}
+Accept: application/json
+
+###
+
+POST {{PeriquitoManagement.Api_HostAddress}}/api/orders/{{OrderId}}/items
+Authorization: Bearer {{MeseroToken}}
+Content-Type: application/json
+
+{
+  "dishId": {{DishId}},
+  "quantity": 2
+}
+
+###
+
+PUT {{PeriquitoManagement.Api_HostAddress}}/api/orders/{{OrderId}}/items/{{DishId}}
+Authorization: Bearer {{MeseroToken}}
+Content-Type: application/json
+
+{
+  "quantity": 3
+}
+
+###
+
+DELETE {{PeriquitoManagement.Api_HostAddress}}/api/orders/{{OrderId}}/items/{{DishId}}
+Authorization: Bearer {{MeseroToken}}
+
+###
+
+POST {{PeriquitoManagement.Api_HostAddress}}/api/orders/{{OrderId}}/cancel
+Authorization: Bearer {{MeseroToken}}
+
+###
+
+POST {{PeriquitoManagement.Api_HostAddress}}/api/sales/orders/{{OrderId}}/complete
+Authorization: Bearer {{MeseroToken}}
+
+###
+
+GET {{PeriquitoManagement.Api_HostAddress}}/api/sales?fromUtc={{FromUtc}}&toUtc={{ToUtc}}
+Authorization: Bearer {{AccessToken}}
+Accept: application/json
+
+###
+
+GET {{PeriquitoManagement.Api_HostAddress}}/api/sales/{{SaleId}}
+Authorization: Bearer {{AccessToken}}
+Accept: application/json
