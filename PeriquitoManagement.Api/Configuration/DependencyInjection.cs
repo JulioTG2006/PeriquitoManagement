@@ -36,6 +36,12 @@ public static class DependencyInjection
         services.AddScoped<ISaleRepository, SaleRepository>();
         services.AddScoped<IRepository<Sale>>(
             provider => provider.GetRequiredService<ISaleRepository>());
+        services.AddScoped<IIngredientRepository, IngredientRepository>();
+        services.AddScoped<IRepository<Ingredient>>(
+            provider => provider.GetRequiredService<IIngredientRepository>());
+        services.AddScoped<IInventoryMovementRepository, InventoryMovementRepository>();
+        services.AddScoped<IRepository<InventoryMovement>>(
+            provider => provider.GetRequiredService<IInventoryMovementRepository>());
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IDatabaseHealthService, DatabaseHealthService>();
         services.AddScoped<IPasswordService, PasswordService>();

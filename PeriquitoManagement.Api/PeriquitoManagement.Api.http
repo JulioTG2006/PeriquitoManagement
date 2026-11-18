@@ -288,3 +288,85 @@ Accept: application/json
 GET {{PeriquitoManagement.Api_HostAddress}}/api/sales/{{SaleId}}
 Authorization: Bearer {{AccessToken}}
 Accept: application/json
+
+### Inventario (solo Administrador)
+
+GET {{PeriquitoManagement.Api_HostAddress}}/api/ingredients
+Authorization: Bearer {{AccessToken}}
+Accept: application/json
+
+###
+
+GET {{PeriquitoManagement.Api_HostAddress}}/api/ingredients/low-stock
+Authorization: Bearer {{AccessToken}}
+Accept: application/json
+
+###
+
+GET {{PeriquitoManagement.Api_HostAddress}}/api/ingredients/{{IngredientId}}
+Authorization: Bearer {{AccessToken}}
+Accept: application/json
+
+###
+
+POST {{PeriquitoManagement.Api_HostAddress}}/api/ingredients
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "name": "Insumo temporal",
+  "unitOfMeasure": "kg",
+  "minimumStock": 5
+}
+
+###
+
+PUT {{PeriquitoManagement.Api_HostAddress}}/api/ingredients/{{IngredientId}}
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "name": "Insumo actualizado",
+  "unitOfMeasure": "kg",
+  "minimumStock": 5,
+  "isActive": true
+}
+
+###
+
+DELETE {{PeriquitoManagement.Api_HostAddress}}/api/ingredients/{{IngredientId}}
+Authorization: Bearer {{AccessToken}}
+
+###
+
+POST {{PeriquitoManagement.Api_HostAddress}}/api/inventory/ingredients/{{IngredientId}}/entries
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "quantity": 25,
+  "reason": "Compra de reposición"
+}
+
+###
+
+POST {{PeriquitoManagement.Api_HostAddress}}/api/inventory/ingredients/{{IngredientId}}/exits
+Authorization: Bearer {{AccessToken}}
+Content-Type: application/json
+
+{
+  "quantity": 10,
+  "reason": "Uso manual en cocina"
+}
+
+###
+
+GET {{PeriquitoManagement.Api_HostAddress}}/api/inventory/movements?ingredientId={{IngredientId}}&movementType=Entrada&fromUtc={{FromUtc}}&toUtc={{ToUtc}}
+Authorization: Bearer {{AccessToken}}
+Accept: application/json
+
+###
+
+GET {{PeriquitoManagement.Api_HostAddress}}/api/inventory/movements?movementType=Salida
+Authorization: Bearer {{AccessToken}}
+Accept: application/json
