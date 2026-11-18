@@ -370,3 +370,20 @@ Accept: application/json
 GET {{PeriquitoManagement.Api_HostAddress}}/api/inventory/movements?movementType=Salida
 Authorization: Bearer {{AccessToken}}
 Accept: application/json
+
+### Dashboard (solo Administrador)
+
+GET {{PeriquitoManagement.Api_HostAddress}}/api/dashboard?fromDate=2026-11-01&toDate=2026-11-30
+Authorization: Bearer {{AccessToken}}
+Accept: application/json
+
+###
+
+GET {{PeriquitoManagement.Api_HostAddress}}/api/dashboard
+Authorization: Bearer {{AccessToken}}
+Accept: application/json
+
+### Reporte Excel (solo Administrador)
+
+GET {{PeriquitoManagement.Api_HostAddress}}/api/reports/sales.xlsx?fromDate=2026-11-01&toDate=2026-11-30
+Authorization: Bearer {{AccessToken}}

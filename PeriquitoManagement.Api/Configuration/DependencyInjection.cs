@@ -42,6 +42,8 @@ public static class DependencyInjection
         services.AddScoped<IInventoryMovementRepository, InventoryMovementRepository>();
         services.AddScoped<IRepository<InventoryMovement>>(
             provider => provider.GetRequiredService<IInventoryMovementRepository>());
+        services.AddScoped<IDashboardRepository, DashboardRepository>();
+        services.AddScoped<IExcelReportService, ExcelReportService>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IDatabaseHealthService, DatabaseHealthService>();
         services.AddScoped<IPasswordService, PasswordService>();
