@@ -9,6 +9,7 @@ public static class MiddlewareConfiguration
     {
         app.UseMiddleware<ExceptionMiddleware>();
         app.UseRouting();
+        app.UseCors("Frontend");
         app.UseMiddleware<RequestLoggingMiddleware>();
 
         return app;

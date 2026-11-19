@@ -3,4 +3,10 @@ obj/
 /packages/
 riderModule.iml
 /_ReSharper.Caches/
+/periquito-frontend/node_modules/
+/periquito-frontend/dist/
+/periquito-frontend/.vite/
+/periquito-frontend/.env
+/periquito-frontend/.env.*
+!/periquito-frontend/.env.example
 .idea/
