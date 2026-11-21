@@ -6,7 +6,14 @@ import { AdminLayout } from "../layouts/AdminLayout";
 import { WaiterLayout } from "../layouts/WaiterLayout";
 import { LoginPage } from "../pages/LoginPage";
 import { LoadingState } from "../components/LoadingState";
-import { ModulePlaceholderPage } from "../pages/admin/ModulePlaceholderPage";
+import { CategoriesPage } from "../pages/admin/CategoriesPage";
+import { DishesPage } from "../pages/admin/DishesPage";
+import { TablesPage } from "../pages/admin/TablesPage";
+import { OrdersPage } from "../pages/admin/OrdersPage";
+import { SalesPage } from "../pages/admin/SalesPage";
+import { InventoryPage } from "../pages/admin/InventoryPage";
+import { ReportsPage } from "../pages/admin/ReportsPage";
+import { UsersPage } from "../pages/admin/UsersPage";
 import { WaiterTablesPage } from "../pages/waiter/WaiterTablesPage";
 import { ActiveOrdersPage } from "../pages/waiter/ActiveOrdersPage";
 import { MenuPage } from "../pages/waiter/MenuPage";
@@ -39,7 +46,14 @@ export function AppRoutes() {
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<Suspense fallback={<LoadingState label="Abriendo dashboard" />}><DashboardPage /></Suspense>} />
-          {[["platos", "Platos"], ["categorias", "Categorías"], ["mesas", "Mesas"], ["pedidos", "Pedidos"], ["ventas", "Ventas"], ["inventario", "Inventario"], ["reportes", "Reportes"], ["usuarios", "Usuarios"]].map(([path, title]) => <Route key={path} path={path} element={<ModulePlaceholderPage title={title} />} />)}
+          <Route path="platos" element={<DishesPage />} />
+          <Route path="categorias" element={<CategoriesPage />} />
+          <Route path="mesas" element={<TablesPage />} />
+          <Route path="pedidos" element={<OrdersPage />} />
+          <Route path="ventas" element={<SalesPage />} />
+          <Route path="inventario" element={<InventoryPage />} />
+          <Route path="reportes" element={<ReportsPage />} />
+          <Route path="usuarios" element={<UsersPage />} />
         </Route>
       </Route>
       <Route element={<Authenticated allowedRole="Mesero" />}>

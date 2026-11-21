@@ -19,5 +19,5 @@ export function useApiResource<T>(load: () => Promise<T>) {
   }, [load]);
 
   useEffect(() => { void reload(); }, [reload]);
-  return { data, loading, error, reload };
+  return { data, setData, loading, error, reload };
 }
