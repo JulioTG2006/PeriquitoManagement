@@ -47,6 +47,12 @@ export interface TableResponse {
   status: string;
 }
 
+export interface CategoryResponse {
+  id: number;
+  name: string;
+  isActive: boolean;
+}
+
 export interface DishResponse {
   id: number;
   categoryId: number;
@@ -77,6 +83,13 @@ export interface OrderResponse {
   status: string;
   total: number;
   details: OrderDetailResponse[];
+}
+
+export interface SaleConfirmationResponse {
+  id: number;
+  orderId: number;
+  soldAt: string;
+  totalAmount: number;
 }
 
 export interface ProblemDetails {

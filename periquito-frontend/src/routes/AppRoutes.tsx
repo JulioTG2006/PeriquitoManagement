@@ -18,6 +18,7 @@ import { WaiterTablesPage } from "../pages/waiter/WaiterTablesPage";
 import { ActiveOrdersPage } from "../pages/waiter/ActiveOrdersPage";
 import { MenuPage } from "../pages/waiter/MenuPage";
 import { ProfilePage } from "../pages/waiter/ProfilePage";
+import { OrderDetailPage } from "../pages/waiter/OrderDetailPage";
 import { roleLandingPath } from "../utils/format";
 
 const DashboardPage = lazy(() => import("../pages/admin/DashboardPage").then((module) => ({ default: module.DashboardPage })));
@@ -61,6 +62,7 @@ export function AppRoutes() {
           <Route index element={<Navigate to="mesas" replace />} />
           <Route path="mesas" element={<WaiterTablesPage />} />
           <Route path="pedidos" element={<ActiveOrdersPage />} />
+          <Route path="pedidos/:id" element={<OrderDetailPage />} />
           <Route path="carta" element={<MenuPage />} />
           <Route path="perfil" element={<ProfilePage />} />
         </Route>
