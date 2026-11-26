@@ -22,6 +22,7 @@ Sistema web para administrar la operación del Restaurante Periquito. Reúne en 
 - [Autenticación, roles y seguridad](#autenticación-roles-y-seguridad)
 - [API y endpoints](#api-y-endpoints)
 - [Reglas de negocio](#reglas-de-negocio)
+- [Tickets y cálculo de efectivo](#tickets-y-cálculo-de-efectivo)
 - [Reportes Excel](#reportes-excel)
 - [Capturas de pantalla](#capturas-de-pantalla)
 - [Configuración del entorno local](#configuración-del-entorno-local)
@@ -63,6 +64,7 @@ Desarrollar un sistema para centralizar y facilitar la gestión operativa del Re
 - Activar o desactivar platos.
 - Consultar pedidos, sus detalles y datos de costo.
 - Consultar ventas, incluyendo mesa, mesero, platos, precios y costos históricos.
+- Consultar e imprimir tickets internos desde el historial de ventas.
 - Registrar entradas y salidas de inventario, consultar movimientos y detectar insumos con stock bajo.
 - Crear y administrar usuarios con roles Administrador o Mesero.
 - Descargar el reporte de ventas en formato Excel.
@@ -72,6 +74,7 @@ Desarrollar un sistema para centralizar y facilitar la gestión operativa del Re
 - Consultar categorías, carta de platos y precios de venta, sin recibir costos en esos DTOs.
 - Consultar mesas, mesas disponibles, pedidos activos y pedidos asociados a una mesa.
 - Abrir pedidos, agregar o ajustar platos, quitar elementos, cancelar pedidos y completar la venta.
+- Ver, imprimir o guardar como PDF el ticket interno al completar una venta; calcular el vuelto de forma auxiliar sin registrar pagos.
 - Consultar su perfil de sesión.
 
 ## Tecnologías
@@ -433,6 +436,14 @@ Implementación: [InventoryMovementUseCases.cs](PeriquitoManagement.Application/
 - No se puede desactivar ni cambiar de rol al último Administrador activo; las actualizaciones sensibles se protegen con transacción serializable.
 - Precios/costos de platos y DTOs de pedidos/ventas con costos son solo para Administrador. El Mesero recibe vistas públicas de operación.
 
+## Tickets y cálculo de efectivo
+
+Al completar un pedido, el panel del Mesero muestra la confirmación de venta y permite abrir, imprimir o guardar el ticket como PDF desde el diálogo de impresión del navegador. El formato CSS está preparado para papel térmico de 80 mm e incluye el logo original, identificadores de venta/pedido, mesa, mesero, hora de Perú y los detalles históricos con cantidades, precios unitarios y subtotales. Señala que es un documento interno sin validez tributaria.
+
+El ticket del Mesero usa el detalle y los precios históricos del pedido que devuelve la API, junto con el número y total de venta confirmados por el backend. Desde el historial administrativo se vuelve a imprimir a partir del DTO histórico de ventas. Ninguna vista del Mesero recibe costos ni ganancias. El monto en efectivo y el vuelto son una ayuda temporal del frontend; no se envían a la API ni se guardan, y el total de venta continúa siendo el calculado por PostgreSQL/API.
+
+Implementación frontend: [OrderDetailPage.tsx](periquito-frontend/src/pages/waiter/OrderDetailPage.tsx), [SalesPage.tsx](periquito-frontend/src/pages/admin/SalesPage.tsx) y [SaleTicket.tsx](periquito-frontend/src/components/tickets/SaleTicket.tsx). La impresión térmica se define en [index.css](periquito-frontend/src/index.css).
+
 ## Reportes Excel
 
 `GET /api/reports/sales.xlsx` produce un archivo `.xlsx` con tres hojas: **Resumen**, **Ventas** y **Productos**. Incluye ingresos, costo, ganancia bruta, número de ventas y cantidades por plato; en ventas muestra mesa, usuario Mesero y fecha convertida a hora de Perú. La función está restringida al rol Administrador.
@@ -565,7 +576,7 @@ Los resultados se separan por entorno para no presentar compilación local como 
 | Tipo | Comprobación | Resultado registrado |
 |---|---|---|
 | Compilación backend | `dotnet build PeriquitoManagement.sln` | Correcta: 0 advertencias y 0 errores en la ejecución local documentada al preparar el despliegue. |
-| Compilación frontend | `npm run build` | Correcta: TypeScript y Vite finalizaron; 2,851 módulos transformados. |
+| Compilación frontend | `npm run build` | Correcta: TypeScript y Vite finalizaron; 2,852 módulos transformados después de añadir los tickets internos. |
 | Pruebas manuales API | Swagger contra PostgreSQL local | El propietario informó que los módulos de la API funcionaban y fueron probados desde Swagger. Esta comprobación corresponde a la base local, no a Neon. |
 | Pruebas manuales frontend | Panel administrativo y panel Mesero | El propietario informó que ambos paneles fueron probados manualmente con éxito. |
 | Pruebas automatizadas | Inspección de la solución | No se encontró un proyecto de pruebas automatizadas versionado. |
