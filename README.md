@@ -7,6 +7,30 @@ Sistema web para administrar la operación del Restaurante Periquito. Reúne en 
 - **Producción:** Render y Neon.
 - **Autor:** Julio Torres.
 
+## Índice
+
+- [Problemática](#problemática)
+- [Propuesta de solución](#propuesta-de-solución)
+- [Objetivos](#objetivos)
+- [Funcionalidades](#funcionalidades)
+- [Tecnologías](#tecnologías)
+- [Arquitectura hexagonal](#arquitectura-hexagonal)
+  - [Flujo completo de una solicitud](#flujo-completo-de-una-solicitud)
+  - [Criterios técnicos y evidencia](#criterios-técnicos-y-evidencia)
+  - [Estructura del repositorio](#estructura-del-repositorio)
+- [Datos y modelo entidad-relación](#datos-y-modelo-entidad-relación)
+- [Autenticación, roles y seguridad](#autenticación-roles-y-seguridad)
+- [API y endpoints](#api-y-endpoints)
+- [Reglas de negocio](#reglas-de-negocio)
+- [Reportes Excel](#reportes-excel)
+- [Capturas de pantalla](#capturas-de-pantalla)
+- [Configuración del entorno local](#configuración-del-entorno-local)
+- [Docker, Render y Neon](#docker-render-y-neon)
+- [Correcciones de despliegue](#correcciones-de-despliegue)
+- [Verificaciones locales y de producción](#verificaciones-locales-y-de-producción)
+- [Limitaciones del alojamiento gratuito](#limitaciones-del-alojamiento-gratuito)
+- [Conclusiones](#conclusiones)
+
 ## Problemática
 
 La operación del restaurante necesita mantener coordinados los datos de mesas, pedidos, platos, ventas e insumos. Cuando estas tareas se gestionan por separado, es más difícil consultar el estado de una mesa, dar seguimiento a un pedido, conservar los importes históricos o revisar los resultados de ventas e inventario.
@@ -97,6 +121,65 @@ flowchart LR
 - **Commands, Queries y Handlers:** MediatR dirige cada solicitud a su Handler. Los Commands modifican el estado; los Queries devuelven proyecciones DTO. Los grupos funcionales se encuentran en `Application/UseCases`.
 - **Controllers:** validan el contrato HTTP, aplican autorización y delegan la operación a MediatR. No acceden directamente al `DbContext`.
 - **Middleware:** `ExceptionMiddleware` produce respuestas `ProblemDetails`; `RequestLoggingMiddleware` registra método, plantilla de ruta, código HTTP y duración, sin registrar cuerpos de solicitud ni credenciales.
+
+### Flujo completo de una solicitud
+
+En el registro de dependencias, los repositorios, `UnitOfWork` y `PeriquitoDbContext` se configuran como `scoped`. El Handler y sus adaptadores reciben, por tanto, el mismo contexto durante una solicitud. Una consulta hace el recorrido hasta PostgreSQL y devuelve el DTO; una operación de escritura añade al recorrido los cambios y, cuando la regla lo requiere, una transacción con confirmación o rollback.
+
+```mermaid
+sequenceDiagram
+    actor Cliente as Frontend o cliente HTTP
+    participant C as Controller
+    participant M as MediatR ISender
+    participant H as Handler de Application
+    participant R as Interfaz Repository de Domain e implementación de Infrastructure
+    participant U as UnitOfWork
+    participant E as EF Core DbContext
+    participant DB as PostgreSQL
+
+    Cliente->>C: HTTP + DTO de solicitud
+    C->>M: Send(Command o Query)
+    M->>H: Invoca Handler registrado
+    opt Command transaccional
+        H->>U: BeginTransactionAsync()
+    end
+    H->>R: Invoca interfaz del repositorio
+    Note over H,R: DI resuelve la implementación concreta scoped
+    R->>E: Consulta o cambia entidades
+    E->>DB: SQL mediante Npgsql
+    DB-->>E: Filas o confirmación
+    E-->>R: Entidades/proyección
+    R-->>H: Resultado del repositorio
+    opt Command transaccional
+        H->>U: SaveChangesAsync()
+        U->>E: Guarda usando el mismo DbContext
+        E->>DB: INSERT / UPDATE / DELETE
+        H->>U: CommitTransactionAsync() o RollbackTransactionAsync()
+    end
+    H-->>M: DTO de respuesta
+    M-->>C: Resultado del caso de uso
+    C-->>Cliente: Código HTTP + DTO/ProblemDetails
+```
+
+En las escrituras transaccionales el Handler inicia la transacción antes de confirmar los cambios; `SaveChangesAsync` no equivale a `CommitTransactionAsync`. `UnitOfWork` libera la transacción y limpia el `ChangeTracker` al revertir.
+
+### Criterios técnicos y evidencia
+
+La rúbrica literal del curso no está versionada en este repositorio. Esta tabla relaciona los criterios técnicos y recomendaciones del profesor que se aplicaron durante el desarrollo con los archivos que permiten revisarlos.
+
+| Criterio técnico | Evidencia verificable |
+|---|---|
+| Separar Api, Application, Domain e Infrastructure y mantener dependencias explícitas | [PeriquitoManagement.sln](PeriquitoManagement.sln), los cuatro `.csproj`, [Program.cs](PeriquitoManagement.Api/Program.cs) y [DependencyInjection.cs](PeriquitoManagement.Api/Configuration/DependencyInjection.cs). |
+| Mantener dominio, puertos y entidades del esquema Database First | [schema.sql](database/schema.sql), `PeriquitoManagement.Domain/Entities/`, `PeriquitoManagement.Domain/Interfaces/` y [PeriquitoDbContext.cs](PeriquitoManagement.Infrastructure/Persistence/PeriquitoDbContext.cs). |
+| Definir interfaces Repository en Domain e implementarlas en Infrastructure | `PeriquitoManagement.Domain/Interfaces/IRepository.cs`, `ICategoryRepository.cs`, `IOrderRepository.cs` y `ISaleRepository.cs`; implementaciones en `PeriquitoManagement.Infrastructure/Repositories/`. |
+| Separar persistencia de transacciones, usar Repository y UnitOfWork | [Repository.cs](PeriquitoManagement.Infrastructure/Repositories/Repository.cs), [UnitOfWork.cs](PeriquitoManagement.Infrastructure/Persistence/UnitOfWork.cs) y [IUnitOfWork.cs](PeriquitoManagement.Domain/Interfaces/IUnitOfWork.cs). |
+| Agrupar Commands, Queries y Handlers por funcionalidad | [CategoryUseCases.cs](PeriquitoManagement.Application/UseCases/Categories/CategoryUseCases.cs), [OrderUseCases.cs](PeriquitoManagement.Application/UseCases/Orders/OrderUseCases.cs), [SaleUseCases.cs](PeriquitoManagement.Application/UseCases/Sales/SaleUseCases.cs) y demás archivos funcionales bajo `PeriquitoManagement.Application/UseCases/`. |
+| Mantener Controllers delgados, sin acceso directo a DbContext | `PeriquitoManagement.Api/Controllers/`; por ejemplo, [OrdersController.cs](PeriquitoManagement.Api/Controllers/OrdersController.cs) delega mediante `ISender`. |
+| Mantener Program.cs como composition root y separar configuración de middleware | [Program.cs](PeriquitoManagement.Api/Program.cs), `PeriquitoManagement.Api/Configuration/` y `PeriquitoManagement.Api/Middleware/`. |
+| Implementar autenticación, roles y protección de costos | [AuthController.cs](PeriquitoManagement.Api/Controllers/AuthController.cs), [AuthenticationConfiguration.cs](PeriquitoManagement.Api/Configuration/AuthenticationConfiguration.cs), [PasswordService.cs](PeriquitoManagement.Infrastructure/Services/PasswordService.cs), controladores con `[Authorize]` y DTOs separados de platos/pedidos. |
+| Aplicar reglas transaccionales para pedidos, ventas e inventario | [OrderUseCases.cs](PeriquitoManagement.Application/UseCases/Orders/OrderUseCases.cs), [SaleUseCases.cs](PeriquitoManagement.Application/UseCases/Sales/SaleUseCases.cs), [InventoryMovementUseCases.cs](PeriquitoManagement.Application/UseCases/Inventory/InventoryMovementUseCases.cs) y [schema.sql](database/schema.sql). |
+| Manejar errores y registrar solicitudes sin datos sensibles | [ExceptionMiddleware.cs](PeriquitoManagement.Api/Middleware/ExceptionMiddleware.cs) y [RequestLoggingMiddleware.cs](PeriquitoManagement.Api/Middleware/RequestLoggingMiddleware.cs). |
+| Desplegar sin incluir secretos ni depender del sistema de archivos local | [Dockerfile](Dockerfile), [.dockerignore](.dockerignore), [render.yaml](render.yaml) y `BootstrapUsers` en Render. |
 
 ### Estructura del repositorio
 
@@ -255,44 +338,100 @@ Los pedidos conservan `unit_price` y `unit_cost` al agregarse un plato, y el det
 
 Los secretos se suministran mediante **User Secrets** en desarrollo o variables de entorno en Render. No se deben guardar en Git, `appsettings.json`, `render.yaml`, Dockerfile ni variables `VITE_*`.
 
-## API: endpoints principales
+## API y endpoints
 
-La API usa el prefijo `/api`. Salvo los endpoints de autenticación indicados y `GET /api/health`, se requiere un JWT Bearer. Los endpoints no listados por método permanecen sujetos a los atributos de autorización descritos a continuación.
+La API utiliza el prefijo `/api`. `Público` significa sin token; `Autenticado` requiere JWT. Los roles se aplican en el backend. En los endpoints de consulta de pedidos, el Controller selecciona el DTO según el rol: el Mesero recibe información de operación sin costos.
 
-| Método y ruta | Acceso | Propósito |
-|---|---|---|
-| `GET /api/health` | Público | Comprueba que la API puede conectarse a PostgreSQL. |
-| `POST /api/auth/login` | Público | Recibe `username` y `password`; devuelve JWT y usuario autenticado. |
-| `GET /api/auth/me` | Usuario autenticado | Devuelve la identidad y rol del token. |
-| `GET /api/categories`, `GET /api/categories/{id}` | Administrador, Mesero | Consulta categorías. |
-| `POST /api/categories`, `PUT /api/categories/{id}`, `DELETE /api/categories/{id}` | Administrador | Mantiene categorías. |
-| `GET /api/dishes`, `GET /api/dishes/{id}` | Administrador, Mesero | Consulta carta; acepta `categoryId` e `isAvailable`. La respuesta del Mesero omite el costo. |
-| `POST /api/dishes`, `PUT /api/dishes/{id}`, `PATCH /api/dishes/{id}/availability`, `DELETE /api/dishes/{id}` | Administrador | Mantiene platos y disponibilidad. |
-| `GET /api/tables`, `/api/tables/available`, `/api/tables/occupied`, `GET /api/tables/{id}` | Administrador, Mesero | Consulta mesas y filtra por estado. |
-| `POST /api/tables`, `PUT /api/tables/{id}`, `DELETE /api/tables/{id}` | Administrador | Mantiene mesas. |
-| `GET /api/orders`, `/api/orders/active`, `GET /api/orders/{id}`, `GET /api/orders/tables/{tableId}/active` | Administrador, Mesero | El Mesero consulta pedidos activos; el Administrador también puede consultar historial y DTOs administrativos. |
-| `POST /api/orders`, `POST /api/orders/{id}/items`, `PUT /api/orders/{id}/items/{dishId}`, `DELETE /api/orders/{id}/items/{dishId}`, `POST /api/orders/{id}/cancel` | Administrador, Mesero | Abre y gestiona pedidos activos. |
-| `POST /api/sales/orders/{orderId}/complete` | Administrador, Mesero | Completa el pedido y registra la venta. |
-| `GET /api/sales`, `GET /api/sales/{id}` | Administrador | Consulta ventas, importes, costos, mesa, mesero y detalles históricos. Admite `fromUtc` y `toUtc`. |
-| `GET /api/ingredients`, `/api/ingredients/low-stock`, `GET /api/ingredients/{id}`, `POST /api/ingredients`, `PUT /api/ingredients/{id}`, `DELETE /api/ingredients/{id}` | Administrador | Consulta y mantiene insumos. |
-| `GET /api/inventory/movements` | Administrador | Consulta movimientos; admite ingrediente, tipo y rango de fechas UTC. |
-| `POST /api/inventory/ingredients/{id}/entries`, `POST /api/inventory/ingredients/{id}/exits` | Administrador | Registra entradas y salidas de inventario. |
-| `GET /api/dashboard` | Administrador | Devuelve indicadores para `fromDate` y `toDate`. |
-| `GET /api/reports/sales.xlsx` | Administrador | Descarga el reporte Excel; admite `fromDate` y `toDate`. |
-| `GET /api/users`, `GET /api/users/{id}`, `POST /api/users`, `PUT /api/users/{id}`, `DELETE /api/users/{id}` | Administrador | Consulta, crea, actualiza o desactiva usuarios. |
+| Módulo | Método | Ruta | Roles autorizados | Descripción |
+|---|---|---|---|---|
+| Salud | GET | `/api/health` | Público | Comprueba conexión con PostgreSQL; devuelve estado conectado o HTTP 503. |
+| Autenticación | POST | `/api/auth/login` | Público | Autentica usuario y contraseña, devuelve JWT. |
+| Autenticación | GET | `/api/auth/me` | Administrador, Mesero | Devuelve la identidad y rol del token. |
+| Categorías | GET | `/api/categories` | Administrador, Mesero | Lista categorías. |
+| Categorías | GET | `/api/categories/{id}` | Administrador, Mesero | Consulta una categoría. |
+| Categorías | POST | `/api/categories` | Administrador | Crea categoría. |
+| Categorías | PUT | `/api/categories/{id}` | Administrador | Actualiza categoría. |
+| Categorías | DELETE | `/api/categories/{id}` | Administrador | Elimina categoría si no tiene platos relacionados. |
+| Platos | GET | `/api/dishes` | Administrador, Mesero | Lista; filtros opcionales `categoryId` e `isAvailable`. El DTO del Mesero omite costo. |
+| Platos | GET | `/api/dishes/{id}` | Administrador, Mesero | Consulta plato; el DTO del Mesero omite costo. |
+| Platos | POST | `/api/dishes` | Administrador | Crea plato. |
+| Platos | PUT | `/api/dishes/{id}` | Administrador | Actualiza plato. |
+| Platos | PATCH | `/api/dishes/{id}/availability` | Administrador | Recibe un booleano JSON para cambiar disponibilidad. |
+| Platos | DELETE | `/api/dishes/{id}` | Administrador | Elimina solo si no se lo impide el historial. |
+| Mesas | GET | `/api/tables` | Administrador, Mesero | Lista; filtro opcional `status`. |
+| Mesas | GET | `/api/tables/available` | Administrador, Mesero | Lista mesas disponibles. |
+| Mesas | GET | `/api/tables/occupied` | Administrador, Mesero | Lista mesas ocupadas. |
+| Mesas | GET | `/api/tables/{id}` | Administrador, Mesero | Consulta mesa. |
+| Mesas | POST | `/api/tables` | Administrador | Crea mesa. |
+| Mesas | PUT | `/api/tables/{id}` | Administrador | Actualiza número/capacidad, no asigna arbitrariamente el estado. |
+| Mesas | DELETE | `/api/tables/{id}` | Administrador | Elimina si no existe historial relacionado. |
+| Pedidos | GET | `/api/orders` | Administrador, Mesero | Administrador: pedidos; Mesero: pedidos activos. |
+| Pedidos | GET | `/api/orders/active` | Administrador, Mesero | Pedidos activos; el DTO administrativo incluye costos. |
+| Pedidos | GET | `/api/orders/{id}` | Administrador, Mesero | Administrador puede consultar historial; Mesero solo pedido activo. |
+| Pedidos | GET | `/api/orders/tables/{tableId}/active` | Administrador, Mesero | Busca pedido activo por mesa. |
+| Pedidos | POST | `/api/orders` | Administrador, Mesero | Abre un pedido asociado al usuario autenticado y la mesa. |
+| Pedidos | POST | `/api/orders/{orderId}/items` | Administrador, Mesero | Agrega plato y cantidad al pedido. |
+| Pedidos | PUT | `/api/orders/{orderId}/items/{dishId}` | Administrador, Mesero | Establece cantidad del plato. |
+| Pedidos | DELETE | `/api/orders/{orderId}/items/{dishId}` | Administrador, Mesero | Quita plato del pedido. |
+| Pedidos | POST | `/api/orders/{orderId}/cancel` | Administrador, Mesero | Cancela pedido activo. |
+| Ventas | POST | `/api/sales/orders/{orderId}/complete` | Administrador, Mesero | Completa pedido y registra venta; respuesta de confirmación sin costos. |
+| Ventas | GET | `/api/sales` | Administrador | Consulta ventas y detalles históricos; acepta `fromUtc` y `toUtc`. |
+| Ventas | GET | `/api/sales/{id}` | Administrador | Consulta venta por ID con costos, mesa, mesero y platos vendidos. |
+| Insumos | GET | `/api/ingredients` | Administrador | Lista insumos. |
+| Insumos | GET | `/api/ingredients/low-stock` | Administrador | Lista insumos bajo stock mínimo. |
+| Insumos | GET | `/api/ingredients/{id}` | Administrador | Consulta insumo. |
+| Insumos | POST | `/api/ingredients` | Administrador | Crea insumo. |
+| Insumos | PUT | `/api/ingredients/{id}` | Administrador | Actualiza insumo. |
+| Insumos | DELETE | `/api/ingredients/{id}` | Administrador | Elimina si no hay movimientos relacionados. |
+| Inventario | GET | `/api/inventory/movements` | Administrador | Consulta; filtros `ingredientId`, `movementType`, `fromUtc`, `toUtc`. |
+| Inventario | POST | `/api/inventory/ingredients/{ingredientId}/entries` | Administrador | Registra entrada de insumo. |
+| Inventario | POST | `/api/inventory/ingredients/{ingredientId}/exits` | Administrador | Registra salida de insumo. |
+| Dashboard | GET | `/api/dashboard` | Administrador | Indicadores con filtros `fromDate` y `toDate`. |
+| Reportes | GET | `/api/reports/sales.xlsx` | Administrador | Descarga reporte Excel; filtros `fromDate` y `toDate`. |
+| Usuarios | GET | `/api/users` | Administrador | Lista usuarios sin exponer hashes. |
+| Usuarios | GET | `/api/users/{id}` | Administrador | Consulta usuario. |
+| Usuarios | POST | `/api/users` | Administrador | Crea usuario y hash de contraseña. |
+| Usuarios | PUT | `/api/users/{id}` | Administrador | Actualiza nombre, rol, estado y opcionalmente contraseña. |
+| Usuarios | DELETE | `/api/users/{id}` | Administrador | Desactiva la cuenta; protege al último Administrador activo. |
 
 Los errores de validación, autenticación, autorización, ausencia de recurso y conflicto se expresan mediante códigos HTTP `400`, `401`, `403`, `404` y `409`, según el caso. Los ejemplos editables de solicitudes están en `PeriquitoManagement.Api/PeriquitoManagement.Api.http`.
 
-## Reglas de negocio destacadas
+## Reglas de negocio
 
-- Se valida que las categorías, platos, mesas, insumos y usuarios cumplan longitudes, formatos, estados y relaciones del esquema.
-- No se pueden crear pedidos para mesas no disponibles o que ya tengan otro pedido activo. Un índice parcial refuerza la unicidad de pedido activo por mesa.
-- Solo se pueden añadir al pedido platos disponibles. Las cantidades deben ser positivas y los importes respetan los límites numéricos de PostgreSQL.
-- El cierre requiere un pedido activo con detalles, genera como máximo una venta, conserva importes históricos y libera la mesa. No se permite completar la venta si el beneficio bruto calculado es negativo.
-- No se permite eliminar categorías, platos, mesas o insumos cuando las relaciones o el historial lo impiden; se pueden desactivar los registros que admiten esa operación.
-- No se puede desactivar ni cambiar de rol al último Administrador activo.
-- Las salidas de inventario requieren stock suficiente. El trigger SQL es responsable de actualizar `current_stock` al insertar el movimiento.
-- Los costos y ganancias quedan accesibles únicamente para operaciones administrativas.
+### Pedidos
+
+- Solo se puede abrir un pedido para una mesa disponible; la transacción marca la mesa como ocupada. El índice parcial `ux_orders_one_active_order_per_table` protege la regla de una orden activa por mesa incluso si llegan solicitudes concurrentes.
+- Se puede modificar un pedido mientras su estado sea activo. Una orden vacía puede existir durante la toma del pedido, pero no puede completarse como venta.
+- Solo se agregan platos disponibles y cantidades positivas. Al agregar cada plato se copian `Dish.Price` y `Dish.Cost` a `OrderDetail.UnitPrice` y `UnitCost`; así una edición posterior del catálogo no altera importes históricos.
+- El total del pedido se recalcula desde cantidades y precios unitarios guardados en sus detalles. Las operaciones de escritura usan transacciones y revierten cambios ante error.
+- La cancelación marca pedido y fecha de cierre, y devuelve la mesa al estado disponible. El estado de mesa no tiene un endpoint de edición arbitraria.
+
+Implementación: [OrderUseCases.cs](PeriquitoManagement.Application/UseCases/Orders/OrderUseCases.cs), [OrderRepository.cs](PeriquitoManagement.Infrastructure/Repositories/OrderRepository.cs), [TableRepository.cs](PeriquitoManagement.Infrastructure/Repositories/TableRepository.cs) e índice en [schema.sql](database/schema.sql).
+
+### Ventas
+
+- Una venta se registra solo para un pedido activo con al menos un detalle. No puede generarse una segunda venta para el mismo pedido; `sales.order_id` es único y el Handler también comprueba la existencia previa.
+- Ingresos, costos y ganancia bruta se calculan con los precios y costos históricos de `order_details`; se rechazan importes fuera del límite numérico y una ganancia bruta negativa.
+- Al completar la venta, en una transacción se registra `sales`, se cierra el pedido con su fecha y total y se libera la mesa. Si una operación falla, se revierte el conjunto.
+- El Mesero puede completar una orden y recibe una confirmación sin costos; solo el Administrador puede consultar ventas, costos, ganancia y detalles históricos.
+
+Implementación: [SaleUseCases.cs](PeriquitoManagement.Application/UseCases/Sales/SaleUseCases.cs), [SaleRepository.cs](PeriquitoManagement.Infrastructure/Repositories/SaleRepository.cs), [SalesController.cs](PeriquitoManagement.Api/Controllers/SalesController.cs) y restricciones de [schema.sql](database/schema.sql).
+
+### Inventario
+
+- Solo se aceptan los tipos `Entrada` y `Salida`, cantidades positivas con hasta tres decimales y razón de hasta 250 caracteres.
+- No se registran movimientos para insumos inactivos. Una salida no puede superar el stock disponible y una entrada no puede superar la precisión/capacidad numérica de la columna.
+- `InventoryMovementUseCases` inicia una transacción y añade el movimiento. El trigger `trg_apply_inventory_movement` / función `apply_inventory_movement` de PostgreSQL es el único mecanismo que incrementa o reduce `ingredients.current_stock`; la actualización incluye una guarda contra saldo negativo.
+- El esquema no contiene una relación de receta entre platos e insumos, por lo que completar una venta no descuenta insumos automáticamente. El stock cambia mediante entradas y salidas explícitas.
+
+Implementación: [InventoryMovementUseCases.cs](PeriquitoManagement.Application/UseCases/Inventory/InventoryMovementUseCases.cs), [InventoryMovementRepository.cs](PeriquitoManagement.Infrastructure/Repositories/InventoryMovementRepository.cs), [InventoryController.cs](PeriquitoManagement.Api/Controllers/InventoryController.cs) y trigger en [schema.sql](database/schema.sql).
+
+### Catálogo, mesas y usuarios
+
+- Se validan longitudes y campos obligatorios según columnas y restricciones de PostgreSQL; número de mesa y capacidad deben ser positivos, y nombre de usuario debe ser único.
+- No se eliminan registros con relaciones o historial que lo impidan. Los usuarios se desactivan mediante `DELETE /api/users/{id}`.
+- No se puede desactivar ni cambiar de rol al último Administrador activo; las actualizaciones sensibles se protegen con transacción serializable.
+- Precios/costos de platos y DTOs de pedidos/ventas con costos son solo para Administrador. El Mesero recibe vistas públicas de operación.
 
 ## Reportes Excel
 
@@ -403,21 +542,45 @@ Para inicializar una base vacía de producción, el orden de scripts es `databas
 - **Backend:** [https://periquito-api.onrender.com](https://periquito-api.onrender.com)
 - **Health de PostgreSQL:** [https://periquito-api.onrender.com/api/health](https://periquito-api.onrender.com/api/health)
 
-## Verificación ejecutada
+## Correcciones de despliegue
 
-Resultados verificados en el estado del proyecto al 25 de noviembre de 2026:
+### Bootstrap inicial de usuarios en Render
 
-| Verificación | Resultado |
-|---|---|
-| `dotnet build PeriquitoManagement.sln` | Correcto: 0 advertencias y 0 errores. |
-| `npm run build` | Correcto: TypeScript y Vite finalizaron; 2,851 módulos transformados. |
-| `GET /api/health` en producción | Respondió `{"status":"connected"}` desde la API pública. |
-| Login de Administrador | Correcto; redirigió al dashboard administrativo. |
-| Login de Mesero | Correcto; redirigió al panel de mesas. |
-| Operación de API y paneles | Las pruebas manuales de módulos desde Swagger y ambos paneles fueron reportadas como satisfactorias durante la validación del proyecto. |
-| Pruebas automatizadas | No se encontró un proyecto de pruebas automatizadas en esta solución. |
+El bootstrap **no estaba limitado a Development**: [Program.cs](PeriquitoManagement.Api/Program.cs) llama a `InitializeBootstrapUsersAsync()` tanto en producción como en local. El bloqueo real era de configuración: `BootstrapUsers__Enabled` estaba definido con valor `false` en el Blueprint; una sincronización podía restablecer el valor manual de Render. En el commit `e1a85b0`, [render.yaml](render.yaml) cambió esa variable a `sync: false`, para que su valor se mantenga bajo control explícito del servicio.
 
-Estas comprobaciones son una fotografía del despliegue y dependen de la disponibilidad de Render y Neon.
+[UserBootstrapper.cs](PeriquitoManagement.Infrastructure/Services/UserBootstrapper.cs) valida las dos cuentas, exige contraseñas de 12–128 caracteres, consulta primero si cada usuario ya existe y crea únicamente las cuentas faltantes con `IPasswordService` / `PasswordService`. Usa una transacción y los roles reales `Administrador` y `Mesero`. Los logs informan si el bootstrap está activado, cuántas cuentas creó o el tipo de excepción; omiten contraseñas y hashes. En el entorno de producción actual el bootstrap se dejó desactivado y se retiraron las variables de contraseñas iniciales tras crear y probar las cuentas.
+
+### Compatibilidad GSSAPI con Neon
+
+Durante el arranque del contenedor Linux el proveedor Npgsql intentó negociar cifrado GSSAPI, pero la imagen ASP.NET no incluía la biblioteca nativa `libgssapi_krb5.so.2`. Esto interrumpía la conexión inicial con Neon. El commit `e9aa080` corrige [DatabaseConfiguration.cs](PeriquitoManagement.Api/Configuration/DatabaseConfiguration.cs) con `NpgsqlConnectionStringBuilder.GssEncryptionMode = GssEncryptionMode.Disable`. Esto desactiva solo la negociación GSSAPI; conserva el modo SSL/TLS proporcionado en la cadena de conexión. El endpoint de salud confirmó después `connected`.
+
+No se publican credenciales ni hashes en este documento. Las variables `BootstrapUsers__*__Password` son valores de configuración secretos: se usan solo para un aprovisionamiento temporal y no deben permanecer una vez creadas las cuentas.
+
+## Verificaciones locales y de producción
+
+Los resultados se separan por entorno para no presentar compilación local como prueba del servicio remoto ni viceversa.
+
+### Locales
+
+| Tipo | Comprobación | Resultado registrado |
+|---|---|---|
+| Compilación backend | `dotnet build PeriquitoManagement.sln` | Correcta: 0 advertencias y 0 errores en la ejecución local documentada al preparar el despliegue. |
+| Compilación frontend | `npm run build` | Correcta: TypeScript y Vite finalizaron; 2,851 módulos transformados. |
+| Pruebas manuales API | Swagger contra PostgreSQL local | El propietario informó que los módulos de la API funcionaban y fueron probados desde Swagger. Esta comprobación corresponde a la base local, no a Neon. |
+| Pruebas manuales frontend | Panel administrativo y panel Mesero | El propietario informó que ambos paneles fueron probados manualmente con éxito. |
+| Pruebas automatizadas | Inspección de la solución | No se encontró un proyecto de pruebas automatizadas versionado. |
+
+### Producción
+
+| Tipo | Comprobación | Resultado observado |
+|---|---|---|
+| Conectividad API → Neon | `GET https://periquito-api.onrender.com/api/health` | Respondió `{"status":"connected"}`. |
+| Inicio de sesión Administrador | Login desde el frontend público | Correcto; abrió `/admin/dashboard`. |
+| Inicio de sesión Mesero | Login desde el frontend público | Correcto; abrió `/mesero/mesas`. |
+| Apagado del bootstrap | Variables del Web Service en Render | `BootstrapUsers__Enabled=false`; las variables de contraseñas iniciales se retiraron. |
+| Despliegue | Servicio `periquito-api` en Render | Despliegue Live desde el commit `e9aa080` antes de esta documentación. |
+
+La salud, los logins y el despliegue son observaciones realizadas en el momento de la validación; su disponibilidad depende de Render y Neon.
 
 ## Limitaciones del alojamiento gratuito
 
