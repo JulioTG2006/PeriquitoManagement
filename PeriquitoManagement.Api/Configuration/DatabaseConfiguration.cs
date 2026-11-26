@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using PeriquitoManagement.Infrastructure.Persistence;
 
 namespace PeriquitoManagement.Api.Configuration;
@@ -14,8 +15,13 @@ public static class DatabaseConfiguration
                                ?? throw new InvalidOperationException(
                                    "Database connection string not found.");
 
+        var postgresConnection = new NpgsqlConnectionStringBuilder(connectionString)
+        {
+            GssEncryptionMode = GssEncryptionMode.Disable
+        }.ConnectionString;
+
         services.AddDbContext<PeriquitoDbContext>(options =>
-            options.UseNpgsql(connectionString));
+            options.UseNpgsql(postgresConnection));
 
         return services;
     }
