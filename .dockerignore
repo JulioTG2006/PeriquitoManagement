@@ -1,0 +1,17 @@
+.git
+.idea
+.vs
+**/bin
+**/obj
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+**/secrets.json
+**/appsettings.Development.json
+database
+periquito-frontend
+riderModule.iml
+git
+ersPC*
+*users.noreply.github.com*
