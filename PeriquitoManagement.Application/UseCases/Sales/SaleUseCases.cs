@@ -112,6 +112,20 @@ public sealed class GetSaleByIdHandler(ISaleRepository sales)
 
 internal static class SaleMapping
 {
-    public static SaleDto ToDto(Sale sale) =>
-        new(sale.Id, sale.OrderId, sale.SoldAt, sale.TotalAmount, sale.GrossProfit);
+    public static SaleDto ToDto(Sale sale) => new(
+        sale.Id,
+        sale.OrderId,
+        sale.SoldAt,
+        sale.TotalAmount,
+        sale.GrossProfit,
+        sale.Order.OrderDetails.Sum(detail => detail.UnitCost * detail.Quantity),
+        sale.Order.Table?.TableNumber,
+        sale.Order.Waiter.FullName,
+        sale.Order.OrderDetails.Select(detail => new SaleDetailDto(
+            detail.DishId,
+            detail.Dish.Name,
+            detail.Quantity,
+            detail.UnitPrice,
+            detail.UnitCost,
+            detail.Subtotal ?? detail.UnitPrice * detail.Quantity)).ToArray());
 }

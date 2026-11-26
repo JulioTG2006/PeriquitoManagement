@@ -15,7 +15,11 @@ public sealed class SaleRepository(PeriquitoDbContext context)
 
     public Task<Sale?> GetByIdWithOrderAsync(long id, CancellationToken cancellationToken = default)
     {
-        return Context.Sales.Include(sale => sale.Order)
+        return Context.Sales.AsNoTracking()
+            .Include(sale => sale.Order).ThenInclude(order => order.Table)
+            .Include(sale => sale.Order).ThenInclude(order => order.Waiter)
+            .Include(sale => sale.Order).ThenInclude(order => order.OrderDetails).ThenInclude(detail => detail.Dish)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(sale => sale.Id == id, cancellationToken);
     }
 
@@ -24,7 +28,11 @@ public sealed class SaleRepository(PeriquitoDbContext context)
         DateTime? toUtc,
         CancellationToken cancellationToken = default)
     {
-        var query = Context.Sales.AsNoTracking().AsQueryable();
+        var query = Context.Sales.AsNoTracking()
+            .Include(sale => sale.Order).ThenInclude(order => order.Table)
+            .Include(sale => sale.Order).ThenInclude(order => order.Waiter)
+            .Include(sale => sale.Order).ThenInclude(order => order.OrderDetails).ThenInclude(detail => detail.Dish)
+            .AsSplitQuery();
         if (fromUtc.HasValue)
             query = query.Where(sale => sale.SoldAt >= fromUtc.Value);
         if (toUtc.HasValue)
