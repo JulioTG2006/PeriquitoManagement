@@ -43,7 +43,7 @@ Configura estas variables en el Web Service. En `render.yaml` ya están declarad
 | `Jwt__Audience` | `PeriquitoManagementFrontend` |
 | `Jwt__ExpirationMinutes` | `30` |
 | `Cors__AllowedOrigins__0` | Origen exacto del Static Site, por ejemplo `https://<nombre-frontend>.onrender.com`, sin ruta ni barra final. |
-| `BootstrapUsers__Enabled` | `false` normalmente; ver creación inicial más abajo. |
+| `BootstrapUsers__Enabled` | Variable de control manual (`sync: false` en el Blueprint). Déjala en `false` normalmente; actívala solo durante el bootstrap y vuelve a desactivarla después. |
 | `BootstrapUsers__Administrator__Username` | Nombre de usuario administrativo que elijas, máximo 60 caracteres. Secreto/configuración privada. |
 | `BootstrapUsers__Administrator__FullName` | Nombre para mostrar, máximo 120 caracteres. |
 | `BootstrapUsers__Administrator__Password` | Contraseña aleatoria exclusiva, de 12 a 128 caracteres. Secreto. |

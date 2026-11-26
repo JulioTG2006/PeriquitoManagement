@@ -25,7 +25,7 @@ services:
       - key: Cors__AllowedOrigins__0
         sync: false
       - key: BootstrapUsers__Enabled
-        value: "false"
+        sync: false
       - key: BootstrapUsers__Administrator__Username
         sync: false
       - key: BootstrapUsers__Administrator__FullName
