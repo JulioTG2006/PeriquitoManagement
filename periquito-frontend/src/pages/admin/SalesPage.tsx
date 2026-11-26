@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
-import { ArrowUpRight, Banknote, CircleDollarSign, Coins, Eye } from "lucide-react";
+import { ArrowUpRight, Banknote, CircleDollarSign, Coins, Eye, ReceiptText } from "lucide-react";
 import { DataTable, Modal, PageTitle } from "../../components/admin/AdminUi";
 import { DateRangeControls, rangeForPreset, type DateRangeValue } from "../../components/admin/DateRangeControls";
 import { ErrorState } from "../../components/ErrorState";
@@ -9,6 +9,8 @@ import { useApiResource } from "../../hooks/useApiResource";
 import { adminService } from "../../services/adminService";
 import type { DashboardResponse } from "../../types/api";
 import type { SaleDto } from "../../types/admin";
+import { SaleTicket } from "../../components/tickets/SaleTicket";
+import type { SaleTicketData } from "../../components/tickets/SaleTicket";
 import { formatCurrency, formatPeruDateTime, peruLocalDateTimeToUtc } from "../../utils/format";
 
 interface SalesData { sales: SaleDto[]; dashboard: DashboardResponse }
@@ -22,6 +24,7 @@ export function SalesPage() {
   }, [range]);
   const { data, loading, error, reload } = useApiResource<SalesData>(load);
   const [selected, setSelected] = useState<SaleDto | null>(null);
+  const [ticket, setTicket] = useState<SaleTicketData | null>(null);
   const rows = useMemo(() => data?.sales ?? [], [data]);
 
   return <div className="space-y-6">
@@ -40,10 +43,24 @@ export function SalesPage() {
         { key: "cost", title: "Costo", render: (sale) => formatCurrency(sale.totalCost) },
         { key: "profit", title: "Ganancia bruta", render: (sale) => <span className="font-semibold text-teal">{formatCurrency(sale.grossProfit)}</span> },
         { key: "detail", title: "Detalle", className: "text-right", render: (sale) => <button aria-label={`Ver venta ${sale.id}`} className="button-quiet text-teal" onClick={() => setSelected(sale)} type="button"><Eye size={16} />Ver</button> },
+        { key: "ticket", title: "Ticket", className: "text-right", render: (sale) => <button aria-label={`Ver ticket de venta ${sale.id}`} className="button-quiet text-teal" onClick={() => setTicket(toTicket(sale))} type="button"><ReceiptText size={16} />Ticket</button> },
       ]} />
     </>}
     {selected && <Modal title={`Venta #${selected.id}`} description={`Pedido #${selected.orderId}`} onClose={() => setSelected(null)} size="lg"><dl className="mb-6 space-y-4 text-sm"><Row label="Fecha y hora (Perú)" value={formatPeruDateTime(selected.soldAt)} /><Row label="Mesa" value={selected.tableNumber == null ? "Sin mesa asignada" : `Mesa ${selected.tableNumber}`} /><Row label="Mesero" value={selected.waiterName} /><Row label="Ingresos" value={formatCurrency(selected.totalAmount)} /><Row label="Costo histórico" value={formatCurrency(selected.totalCost)} /><Row label="Ganancia bruta" value={formatCurrency(selected.grossProfit)} /></dl><h4 className="mb-3 font-bold text-navy">Platos vendidos</h4><div className="overflow-x-auto rounded-xl border border-slate-200"><table className="w-full min-w-[520px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="px-4 py-3">Plato</th><th className="px-4 py-3">Cantidad</th><th className="px-4 py-3">Precio unitario</th><th className="px-4 py-3">Subtotal</th></tr></thead><tbody>{selected.details.map((detail) => <tr className="border-t border-slate-100" key={detail.dishId}><td className="px-4 py-3 font-medium text-navy">{detail.dishName}</td><td className="px-4 py-3">{detail.quantity}</td><td className="px-4 py-3">{formatCurrency(detail.unitPrice)}</td><td className="px-4 py-3 font-semibold">{formatCurrency(detail.subtotal)}</td></tr>)}</tbody></table></div></Modal>}
+    {ticket && <SaleTicket onClose={() => setTicket(null)} ticket={ticket} />}
   </div>;
 }
 
 function Row({ label, value }: { label: string; value: string }) { return <div className="flex justify-between gap-4 border-b border-slate-100 pb-3"><dt className="text-slate-500">{label}</dt><dd className="text-right font-semibold text-navy">{value}</dd></div>; }
+
+function toTicket(sale: SaleDto): SaleTicketData {
+  return {
+    saleId: sale.id,
+    orderId: sale.orderId,
+    tableNumber: sale.tableNumber,
+    waiterName: sale.waiterName,
+    soldAt: sale.soldAt,
+    totalAmount: sale.totalAmount,
+    details: sale.details.map(({ dishName, quantity, unitPrice, subtotal }) => ({ dishName, quantity, unitPrice, subtotal })),
+  };
+}

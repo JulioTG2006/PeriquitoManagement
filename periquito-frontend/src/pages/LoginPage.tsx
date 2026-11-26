@@ -41,7 +41,7 @@ export function LoginPage() {
         <Brand inverse />
         <div className="relative max-w-xl py-12">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-teal-300">Restaurante Periquito</p>
-          <h1 className="mt-5 text-5xl font-bold leading-[1.12] tracking-tight xl:text-6xl">Cada mesa, una buena experiencia.</h1>
+          <h1 className="font-display mt-5 text-5xl font-bold leading-[1.12] tracking-tight xl:text-6xl">Cada mesa, una buena experiencia.</h1>
           <p className="mt-6 max-w-lg text-base leading-7 text-white/65">Accede al espacio de gestión del restaurante y acompaña cada servicio desde un solo lugar.</p>
         </div>
         <p className="text-xs text-white/45">Sistema interno de operación · Periquito</p>
